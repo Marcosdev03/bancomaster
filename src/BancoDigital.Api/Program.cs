@@ -1,5 +1,6 @@
 using BancoDigital.Api.Endpoints;
 using BancoDigital.Api.Data;
+using BancoDigital.Api.Clientes;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,5 +25,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.MapHealthEndpoints();
+
+app.MapClientesEndpoints();
 
 app.Run();
