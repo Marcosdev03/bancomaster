@@ -1,7 +1,6 @@
 using BancoDigital.Api.Data;
 using Dapper;
 
-
 namespace BancoDigital.Api.Endpoints;
 
 public static class HealthEndpoints
@@ -11,49 +10,53 @@ public static class HealthEndpoints
         var group = app.MapGroup("/health")
             .WithTags("Health");
 
-        group.MapGet("/", () =>
+        group.MapGet("/live", () =>
         {
             return Results.Ok(new
             {
                 status = "healthy",
-                service = "BancoDigital.Api",
                 checkedAt = DateTimeOffset.UtcNow
             });
         })
-        .WithName("GetHealth")
+        .WithName("GetLiveness")
         .WithOpenApi();
 
-        group.MapGet("/database", async (SqlConnectionFactory connectionFactory) =>
+        group.MapGet("/ready", async (SqlConnectionFactory connectionFactory) =>
         {
-            await using var connection = connectionFactory.Create();
-
-            var result = await connection.QuerySingleAsync<DatabaseHealthResult>(
-                """
-                SELECT 
-                    DB_NAME() AS DatabaseName,
-                    COUNT(*) AS TotalClientes
-                FROM dbo.Clientes;
-                """);
-
-            return Results.Ok(new
+            try
             {
-                status = "healthy",
-                database = result.DatabaseName,
-                totalClientes = result.TotalClientes,
-                checkedAt = DateTimeOffset.UtcNow
+                await using var connection = connectionFactory.Create();
 
-            });
+                var canConnect = await connection.ExecuteScalarAsync<int>(
+                    """
+                    SELECT 1;
+                    """);
 
+                if (canConnect != 1)
+                {
+                    return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+                }
+
+                return Results.Ok(new
+                {
+                    status = "ready",
+                    checkedAt = DateTimeOffset.UtcNow
+                });
+            }
+            catch
+            {
+                return Results.Json(
+                    new
+                    {
+                        status = "not_ready",
+                        checkedAt = DateTimeOffset.UtcNow
+                    },
+                    statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
         })
-        .WithName("GetDatabaseHealth")
+        .WithName("GetReadiness")
         .WithOpenApi();
-
 
         return app;
-
     }
-
-    private sealed record DatabaseHealthResult(string DatabaseName, int TotalClientes);
-
 }
-
