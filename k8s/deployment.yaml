@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bancodigital-api
+  namespace: banco-digital
+  labels:
+    app: bancodigital-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bancodigital-api
+  template:
+    metadata:
+      labels:
+        app: bancodigital-api
+    spec:
+      containers:
+        - name: bancodigital-api
+          image: acrbancodigitaldev.azurecr.io/bancodigital-api:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Production
+            - name: Jwt__SigningKey
+              valueFrom:
+                secretKeyRef:
+                  name: bancodigital-api-secrets
+                  key: Jwt__SigningKey
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
