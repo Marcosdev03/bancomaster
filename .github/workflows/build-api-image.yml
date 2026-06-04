@@ -1,0 +1,41 @@
+name: Build BancoDigital API image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - Dockerfile
+      - src/**
+      - .github/workflows/build-api-image.yml
+
+env:
+  ACR_LOGIN_SERVER: acrbancodigitaldev.azurecr.io
+  IMAGE_NAME: bancodigital-api
+  IMAGE_TAG: v1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t $ACR_LOGIN_SERVER/$IMAGE_NAME:$IMAGE_TAG \
+            .
+
+      - name: Push Docker image
+        run: |
+          docker push $ACR_LOGIN_SERVER/$IMAGE_NAME:$IMAGE_TAG
