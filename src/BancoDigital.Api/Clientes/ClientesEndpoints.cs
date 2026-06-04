@@ -75,6 +75,7 @@ public static class ClientesEndpoints
             ));
         })
         .WithName("ListarClientes")
+        .RequireAuthorization("Backoffice")
         .WithOpenApi();
 
         return app;
